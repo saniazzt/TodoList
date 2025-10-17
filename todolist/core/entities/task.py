@@ -13,3 +13,14 @@ class Task:
     description: str
     status: str = "todo"
     deadline: Optional[date] = None
+
+    @classmethod
+    def create(
+        cls,
+        title: str,
+        description: str,
+        status: str = "todo",
+        deadline: Optional[date] = None,
+    ) -> "Task":
+        short_id = uuid.uuid4().hex[:4]
+        return cls(id=short_id, title=title, description=description, status=status, deadline=deadline)

@@ -17,3 +17,6 @@ class Project:
     def create(cls, name: str, description: str) -> "Project":
         short_id = uuid.uuid4().hex[:4]
         return cls(id=short_id, name=name, description=description)
+    
+    def add_task(self, task: Task) -> None:
+        self.tasks.append(task)

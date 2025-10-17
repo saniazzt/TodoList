@@ -19,3 +19,12 @@ class ProjectService:
         proj = Project.create(name=name, description=description)
         self.storage.add_project(proj)
         return proj
+
+    def edit_project(self, project_id: str, new_name: str, new_description: str) -> Project:
+        proj = self.storage.get_project(project_id)
+        if not proj:
+            raise InvalidEntityError("Project not found.")
+        validate_project_name(new_name, exclude_project_id=project_id)
+        proj.name = new_name
+        proj.description = new_description
+        return proj

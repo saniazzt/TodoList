@@ -3,7 +3,6 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import List
 import uuid
-
 from todolist.core.entities.task import Task
 
 
@@ -16,4 +15,5 @@ class Project:
 
     @classmethod
     def create(cls, name: str, description: str) -> "Project":
-        return cls(id=str(uuid.uuid4()), name=name, description=description)
+        short_id = uuid.uuid4().hex[:4]
+        return cls(id=short_id, name=name, description=description)

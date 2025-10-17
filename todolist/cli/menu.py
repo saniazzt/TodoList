@@ -143,6 +143,13 @@ class CLI:
             print(error(str(exc)))
         self.pause_for_user()
 
+    def list_tasks(self) -> None:
+        if not self.show_projects(pause=False):
+            return  # Stop if no projects
+
+        pid = input("Enter project id to view tasks: ").strip()
+        self.show_tasks(pid, pause=True)
+
     def edit_task(self) -> None:
         if not self.show_projects(pause=False):
             return  # Stop if no projects
@@ -225,10 +232,11 @@ class CLI:
             "2": ("Create project", self.create_project),
             "3": ("Edit project", self.edit_project),
             "4": ("Delete project", self.delete_project),
-            "5": ("Add task", self.add_task),
-            "6": ("Edit task", self.edit_task),
-            "7": ("Delete task", self.delete_task),
-            "8": ("Change task status", self.change_task_status),
+            "5": ("List tasks by project", self.list_tasks),
+            "6": ("Add task", self.add_task),
+            "7": ("Edit task", self.edit_task),
+            "8": ("Delete task", self.delete_task),
+            "9": ("Change task status", self.change_task_status),
             "q": ("Quit", None),
         }
 

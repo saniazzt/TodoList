@@ -20,3 +20,14 @@ class Project:
     
     def add_task(self, task: Task) -> None:
         self.tasks.append(task)
+
+    def remove_task(self, task_id: str) -> bool:
+        before = len(self.tasks)
+        self.tasks = [t for t in self.tasks if t.id != task_id]
+        return len(self.tasks) < before
+
+    def get_task(self, task_id: str) -> Task | None:
+        for t in self.tasks:
+            if t.id == task_id:
+                return t
+        return None

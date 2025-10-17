@@ -63,6 +63,12 @@ class TaskService:
 
         return task
     
+    def delete_task(self, project_id: str, task_id: str) -> bool:
+        proj = self.storage.get_project(project_id)
+        if proj is None:
+            raise InvalidEntityError("Project not found.")
+        return proj.remove_task(task_id)
+    
     def change_status(self, project_id: str, task_id: str, new_status: str) -> Task:
         proj = self.storage.get_project(project_id)
         if proj is None:

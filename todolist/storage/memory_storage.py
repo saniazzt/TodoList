@@ -12,3 +12,12 @@ class MemoryStorage:
 
     def add_project(self, project: Project) -> None:
         self.projects[project.id] = project
+
+    def get_project(self, project_id: str) -> Optional[Project]:
+        return self.projects.get(project_id)
+
+    def find_project_by_name(self, name: str) -> Optional[Project]:
+        for p in self.projects.values():
+            if p.name == name:
+                return p
+        return None

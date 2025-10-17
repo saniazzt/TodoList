@@ -16,6 +16,12 @@ class MemoryStorage:
     def get_project(self, project_id: str) -> Optional[Project]:
         return self.projects.get(project_id)
 
+    def remove_project(self, project_id: str) -> bool:
+        if project_id in self.projects:
+            del self.projects[project_id]
+            return True
+        return False
+    
     def find_project_by_name(self, name: str) -> Optional[Project]:
         for p in self.projects.values():
             if p.name == name:

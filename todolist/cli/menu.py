@@ -82,12 +82,37 @@ class CLI:
             print(error(str(exc)))
         self.pause_for_user()
 
+    # ---------- Task operations ----------
+    def add_task(self) -> None:
+        if not self.show_projects(pause=False):
+            return  # Stop if no projects
+
+        pid = input("Enter project id to add task: ").strip()
+        project = self.project_service.get_project(pid)
+        if not project:
+            print(error("Project not found."))
+            self.pause_for_user()
+            return
+
+        title = input("Task title: ").strip()
+        desc = input("Task description: ").strip()
+        dl = input("Deadline (YYYY-MM-DD) or blank: ").strip()
+
+        try:
+            deadline = parse_date(dl) if dl else None
+            task = self.task_service.add_task(pid, title, desc, deadline)
+            print(success(f"Task added: {task.id} | {task.title}"))
+        except Exception as exc:
+            print(error(str(exc)))
+        self.pause_for_user()
+
     # ---------- Menu ----------
     def run(self) -> None:
         actions = {
             "1": ("Create project", self.create_project),
             "2": ("Edit project", self.edit_project),
             "3": ("Delete project", self.delete_project),
+            "4": ("Add task", self.add_task),
             "q": ("Quit", None),
         }
 

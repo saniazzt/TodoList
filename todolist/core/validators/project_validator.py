@@ -28,7 +28,6 @@ def validate_project_limits() -> None:
         raise LimitExceededError("Maximum number of projects reached.")
 
 
-# To avoid circular import issues, provide a simple accessor wrapper below.
 class MemoryStorageSingleton:
     _instance: MemoryStorage | None = None
 

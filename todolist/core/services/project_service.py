@@ -28,9 +28,12 @@ class ProjectService:
         proj.name = new_name
         proj.description = new_description
         return proj
-    
+
     def delete_project(self, project_id: str) -> bool:
         return self.storage.remove_project(project_id)
+
+    def list_projects(self) -> List[Project]:
+        return self.storage.get_all_projects()
 
     def get_project(self, project_id: str) -> Optional[Project]:
         return self.storage.get_project(project_id)

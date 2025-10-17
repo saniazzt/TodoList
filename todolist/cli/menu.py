@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import Optional
 
 from todolist.core.services.project_service import ProjectService
+from todolist.core.services.task_service import TaskService
 from todolist.utils.formatter import success, error, info, format_entity
 
 
@@ -19,6 +20,7 @@ def parse_date(s: str) -> Optional[datetime.date]:
 class CLI:
     def __init__(self) -> None:
         self.project_service = ProjectService()
+        self.task_service = TaskService()
 
     # ---------- Utility ----------
     def pause_for_user(self) -> None:
@@ -26,14 +28,14 @@ class CLI:
         input(info("\nPress Enter to return to the menu..."))
 
     # ---------- Helper displays ----------
-    def show_projects(self, pause: bool = True) -> None:
-        """Show all projects. Pause only if explicitly requested."""
+    def show_projects(self, pause: bool = True) -> bool:
+        """Show all projects. Returns False if no projects exist."""
         projects = self.project_service.list_projects()
         if not projects:
             print(info("No projects found."))
             if pause:
                 self.pause_for_user()
-            return
+            return False
 
         print("\nAvailable Projects:")
         print("-" * 100)
@@ -46,6 +48,8 @@ class CLI:
 
         if pause:
             self.pause_for_user()
+
+        return True
 
     def show_tasks(self, project_id: str, pause: bool = True) -> bool:
         """Show all tasks for a project. Returns False if no tasks exist."""
@@ -76,6 +80,7 @@ class CLI:
             self.pause_for_user()
 
         return True
+
     # ---------- Project operations ----------
     def create_project(self) -> None:
         name = input("Project name: ").strip()
@@ -87,8 +92,12 @@ class CLI:
             print(error(str(exc)))
         self.pause_for_user()
 
+    def list_projects(self) -> None:
+        self.show_projects(pause=True)
+
     def edit_project(self) -> None:
-        self.show_projects(pause=False)
+        if not self.show_projects(pause=False):
+            return  # Stop if no projects
         pid = input("Enter project id to edit: ").strip()
         new_name = input("New project name: ").strip()
         new_desc = input("New project description: ").strip()
@@ -212,13 +221,14 @@ class CLI:
     # ---------- Menu ----------
     def run(self) -> None:
         actions = {
-            "1": ("Create project", self.create_project),
-            "2": ("Edit project", self.edit_project),
-            "3": ("Delete project", self.delete_project),
-            "4": ("Add task", self.add_task),
-            "5": ("Edit task", self.edit_task),
-            "6": ("Change task status", self.change_task_status),
+            "1": ("List projects", self.list_projects),
+            "2": ("Create project", self.create_project),
+            "3": ("Edit project", self.edit_project),
+            "4": ("Delete project", self.delete_project),
+            "5": ("Add task", self.add_task),
+            "6": ("Edit task", self.edit_task),
             "7": ("Delete task", self.delete_task),
+            "8": ("Change task status", self.change_task_status),
             "q": ("Quit", None),
         }
 

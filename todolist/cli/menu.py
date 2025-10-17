@@ -47,7 +47,35 @@ class CLI:
         if pause:
             self.pause_for_user()
 
+    def show_tasks(self, project_id: str, pause: bool = True) -> bool:
+        """Show all tasks for a project. Returns False if no tasks exist."""
+        try:
+            tasks = self.task_service.list_tasks(project_id)
+        except Exception as exc:
+            print(error(str(exc)))
+            if pause:
+                self.pause_for_user()
+            return False
 
+        if not tasks:
+            print(info("No tasks found for this project."))
+            if pause:
+                self.pause_for_user()
+            return False
+
+        print("\nTasks in Project:")
+        print("-" * 70)
+        print(f"{'ID':<5} | {'Title':<25} | {'Status':<6} | Deadline")
+        print("-" * 70)
+        for t in tasks:
+            dl = t.deadline.isoformat() if t.deadline else "—"
+            print(f"{t.id:<5} | {t.title:<25} | {t.status:<6} | {dl}")
+        print("-" * 70)
+
+        if pause:
+            self.pause_for_user()
+
+        return True
     # ---------- Project operations ----------
     def create_project(self) -> None:
         name = input("Project name: ").strip()
@@ -106,6 +134,59 @@ class CLI:
             print(error(str(exc)))
         self.pause_for_user()
 
+    def edit_task(self) -> None:
+        if not self.show_projects(pause=False):
+            return  # Stop if no projects
+
+        pid = input("Enter project id: ").strip()
+        project = self.project_service.get_project(pid)
+        if not project:
+            print(error("Project not found."))
+            self.pause_for_user()
+            return
+
+        if not self.show_tasks(pid, pause=False):
+            return  # Stop if no tasks
+
+        tid = input("Enter task id to edit: ").strip()
+
+        print("\nLeave any field blank to keep current value.")
+        title = input("New title: ").strip() or None
+        desc = input("New description: ").strip() or None
+        status = input("New status (todo/doing/done): ").strip() or None
+        dl = input("New deadline (YYYY-MM-DD) or blank: ").strip() or None
+
+        try:
+            deadline = parse_date(dl) if dl else None
+            task = self.task_service.edit_task(pid, tid, title, desc, status, deadline)
+            print(success(f"Task updated: {task.id} | {task.title} | {task.status}"))
+        except Exception as exc:
+            print(error(str(exc)))
+        self.pause_for_user()
+
+    def change_task_status(self) -> None:
+        if not self.show_projects(pause=False):
+            return  # Stop if no projects
+
+        pid = input("Enter project id: ").strip()
+        project = self.project_service.get_project(pid)
+        if not project:
+            print(error("Project not found."))
+            self.pause_for_user()
+            return
+
+        if not self.show_tasks(pid, pause=False):
+            return  # Stop if no tasks
+
+        tid = input("Enter task id to change status: ").strip()
+        status = input("New status (todo/doing/done): ").strip()
+        try:
+            t = self.task_service.change_status(pid, tid, status)
+            print(success(f"Status updated: {t.id} is now {t.status}"))
+        except Exception as exc:
+            print(error(str(exc)))
+        self.pause_for_user()
+
     # ---------- Menu ----------
     def run(self) -> None:
         actions = {
@@ -113,6 +194,8 @@ class CLI:
             "2": ("Edit project", self.edit_project),
             "3": ("Delete project", self.delete_project),
             "4": ("Add task", self.add_task),
+            "5": ("Edit task", self.edit_task),
+            "6": ("Change task status", self.change_task_status),
             "q": ("Quit", None),
         }
 

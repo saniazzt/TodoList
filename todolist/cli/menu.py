@@ -60,7 +60,8 @@ class CLI:
         self.pause_for_user()
 
     def edit_project(self) -> None:
-        self.show_projects(pause=False)
+        if not self.show_projects(pause=False):
+            return  # Stop if no projects
         pid = input("Enter project id to edit: ").strip()
         new_name = input("New project name: ").strip()
         new_desc = input("New project description: ").strip()

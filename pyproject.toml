@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "todolist"
+version = "0.1.0"
+description = "ToDoList - Python OOP (In-Memory) - Phase 1"
+authors = ["Your Name <you@example.com>"]
+packages = [{ include = "todolist" }]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+python-dotenv = "^1.0.0"
+
+[tool.poetry.dev-dependencies]
+pytest = "^7.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

@@ -165,6 +165,28 @@ class CLI:
             print(error(str(exc)))
         self.pause_for_user()
 
+    def delete_task(self) -> None:
+        if not self.show_projects(pause=False):
+            return  # Stop if no projects
+
+        pid = input("Enter project id: ").strip()
+        project = self.project_service.get_project(pid)
+        if not project:
+            print(error("Project not found."))
+            self.pause_for_user()
+            return
+
+        if not self.show_tasks(pid, pause=False):
+            return  # Stop if no tasks
+
+        tid = input("Enter task id to delete: ").strip()
+        try:
+            ok = self.task_service.delete_task(pid, tid)
+            print(success("Task deleted") if ok else error("Task not found"))
+        except Exception as exc:
+            print(error(str(exc)))
+        self.pause_for_user()
+
     def change_task_status(self) -> None:
         if not self.show_projects(pause=False):
             return  # Stop if no projects
@@ -197,6 +219,7 @@ class CLI:
             "4": ("Add task", self.add_task),
             "5": ("Edit task", self.edit_task),
             "6": ("Change task status", self.change_task_status),
+            "7": ("Delete task", self.delete_task),
             "q": ("Quit", None),
         }
 

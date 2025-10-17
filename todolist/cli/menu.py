@@ -72,11 +72,23 @@ class CLI:
             print(error(str(exc)))
         self.pause_for_user()
 
+    def delete_project(self) -> None:
+        if not self.show_projects(pause=False):
+            return  # Stop if no projects
+        pid = input("Enter project id to delete: ").strip()
+        try:
+            ok = self.project_service.delete_project(pid)
+            print(success("Project deleted") if ok else error("Project not found"))
+        except Exception as exc:
+            print(error(str(exc)))
+        self.pause_for_user()
+
     # ---------- Menu ----------
     def run(self) -> None:
         actions = {
             "1": ("Create project", self.create_project),
             "2": ("Edit project", self.edit_project),
+            "3": ("Delete project", self.delete_project),
             "q": ("Quit", None),
         }
 

@@ -6,7 +6,6 @@ from todolist.core.entities.task import Task
 
 
 class MemoryStorage:
-    """Simple in-memory storage singleton-ish instance (you can instantiate normally)."""
 
     def __init__(self) -> None:
         self.projects: Dict[str, Project] = {}

@@ -3,8 +3,8 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Optional
 
-from todolist.core.services.project_service import ProjectService
-from todolist.core.services.task_service import TaskService
+from todolist.services.project_service import ProjectService
+from todolist.services.task_service import TaskService
 from todolist.utils.formatter import success, error, info, format_entity
 
 

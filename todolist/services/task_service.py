@@ -4,14 +4,14 @@ from datetime import date
 from typing import Optional, List
 
 from todolist.core.entities.task import Task
-from todolist.core.exceptions.invalid_entity import InvalidEntityError
-from todolist.core.validators.task_validator import (
+from todolist.exceptions.invalid_entity import InvalidEntityError
+from todolist.validators.task_validator import (
     validate_task_title,
     validate_task_description,
     validate_status,
     validate_deadline,
 )
-from todolist.core.validators.project_validator import MemoryStorageSingleton
+from todolist.validators.project_validator import MemoryStorageSingleton
 from todolist.storage.memory_storage import MemoryStorage
 
 

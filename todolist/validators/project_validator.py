@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import Optional
 
-from todolist.core.exceptions.invalid_entity import InvalidEntityError
-from todolist.core.exceptions.limit_exceeded import LimitExceededError
+from todolist.exceptions.invalid_entity import InvalidEntityError
+from todolist.exceptions.limit_exceeded import LimitExceededError
 from todolist.utils.env_loader import get_env_int
 from todolist.storage.memory_storage import MemoryStorage
 

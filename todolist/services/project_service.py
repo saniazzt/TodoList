@@ -3,9 +3,9 @@ from __future__ import annotations
 from typing import List, Optional
 
 from todolist.core.entities.project import Project
-from todolist.core.exceptions.invalid_entity import InvalidEntityError
-from todolist.core.exceptions.limit_exceeded import LimitExceededError
-from todolist.core.validators.project_validator import validate_project_name, validate_project_limits, MemoryStorageSingleton
+from todolist.exceptions.invalid_entity import InvalidEntityError
+from todolist.exceptions.limit_exceeded import LimitExceededError
+from todolist.validators.project_validator import validate_project_name, validate_project_limits, MemoryStorageSingleton
 from todolist.storage.memory_storage import MemoryStorage
 
 

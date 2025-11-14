@@ -1,87 +1,112 @@
 from __future__ import annotations
-
-from datetime import date
+from datetime import datetime
 from typing import Optional, List
-
-from todolist.core.entities.task import Task
-from todolist.exceptions.invalid_entity import InvalidEntityError
+from todolist.repositories.abstract import TaskRepositoryInterface
+from todolist.models.task import Task, TaskStatus
+from todolist.models.project import Project
 from todolist.validators.task_validator import (
     validate_task_title,
     validate_task_description,
-    validate_status,
-    validate_deadline,
+    validate_task_status,
+    validate_task_deadline,
+    validate_task_limit,
 )
-from todolist.validators.project_validator import MemoryStorageSingleton
-from todolist.storage.memory_storage import MemoryStorage
+from todolist.exceptions.not_found import NotFoundError
 
 
 class TaskService:
-    def __init__(self, storage: Optional[MemoryStorage] = None) -> None:
-        self.storage = storage or MemoryStorageSingleton.get_instance()
+    def __init__(self, repo: TaskRepositoryInterface):
+        self.repo = repo
 
-    def add_task(self, project_id: str, title: str, description: str, deadline: Optional[date] = None) -> Task:
+    def list_tasks(self, project: Project) -> List[Task]:
+        return self.repo.list_by_project(project.id)
+
+    def add_task(self, project: Project, title: str, description: str, deadline) -> Task:
+        if not project:
+            raise NotFoundError("Project not found.")
+
         validate_task_title(title)
         validate_task_description(description)
-        validate_deadline(deadline)
+        validate_task_deadline(deadline)
+        validate_task_limit(self.repo, project.id)
 
-        proj = self.storage.get_project(project_id)
-        if proj is None:
-            raise InvalidEntityError("Project not found.")
-
-        task = Task.create(title=title, description=description, deadline=deadline)
-        proj.add_task(task)
-        return task
+        task = Task(
+            project_id=project.id,
+            title=title,
+            description=description,
+            deadline=deadline,
+            status=TaskStatus.todo,
+        )
+        return self.repo.add(task)
 
     def edit_task(
         self,
-        project_id: str,
-        task_id: str,
-        title: Optional[str] = None,
-        description: Optional[str] = None,
-        status: Optional[str] = None,
-        deadline: Optional[date] = None,
+        project: Project,
+        task_id: int,
+        title: Optional[str],
+        description: Optional[str],
+        status: Optional[str],
+        deadline,
     ) -> Task:
-        proj = self.storage.get_project(project_id)
-        if proj is None:
-            raise InvalidEntityError("Project not found.")
-        task = proj.get_task(task_id)
-        if task is None:
-            raise InvalidEntityError("Task not found.")
+        if not project:
+            raise NotFoundError("Project not found.")
+
+        task = self.repo.get(task_id)
+        if not task or task.project_id != project.id:
+            raise NotFoundError("Task not found in this project.")
 
         if title is not None:
             validate_task_title(title)
             task.title = title
+
         if description is not None:
             validate_task_description(description)
             task.description = description
+
         if status is not None:
-            validate_status(status)
-            task.status = status
+            validate_task_status(status)
+            task.status = TaskStatus(status)
+            if task.status == TaskStatus.done:
+                task.closed_at = datetime.utcnow()
+
         if deadline is not None:
-            validate_deadline(deadline)
+            validate_task_deadline(deadline)
             task.deadline = deadline
 
-        return task
+        return self.repo.update(task)
 
-    def delete_task(self, project_id: str, task_id: str) -> bool:
-        proj = self.storage.get_project(project_id)
-        if proj is None:
-            raise InvalidEntityError("Project not found.")
-        return proj.remove_task(task_id)
+    def delete_task(self, project: Project, task_id: int) -> bool:
+        if not project:
+            raise NotFoundError("Project not found.")
 
-    def change_status(self, project_id: str, task_id: str, new_status: str) -> Task:
-        proj = self.storage.get_project(project_id)
-        if proj is None:
-            raise InvalidEntityError("Project not found.")
-        task = proj.get_task(task_id)
-        if task is None:
-            raise InvalidEntityError("Task not found.")
-        validate_status(new_status)
-        task.status = new_status
-        return task
+        task = self.repo.get(task_id)
+        if not task or task.project_id != project.id:
+            return False
 
-    def list_tasks(self, project_id: str) -> List[Task]:
-        proj = self.storage.get_project(project_id)
-        if proj is None:
-            raise InvalidEntityError("Project not found.")
-        return proj.tasks.copy()
+        return self.repo.delete(task_id)
+
+    def change_status(self, project: Project, task_id: int, new_status: str) -> Task:
+        if not project:
+            raise NotFoundError("Project not found.")
+
+        task = self.repo.get(task_id)
+        if not task or task.project_id != project.id:
+            raise NotFoundError("Task not found.")
+
+        validate_task_status(new_status)
+
+        task.status = TaskStatus(new_status)
+        if task.status == TaskStatus.done:
+            task.closed_at = datetime.utcnow()
+
+        return self.repo.update(task)
+
+    def autoclose_overdue(self) -> int:
+        overdue = self.repo.list_overdue()
+        count = 0
+        for task in overdue:
+            task.status = TaskStatus.done
+            task.closed_at = datetime.utcnow()
+            self.repo.update(task)
+            count += 1
+        return count

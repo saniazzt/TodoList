@@ -1,39 +1,44 @@
 from __future__ import annotations
-
 from typing import List, Optional
-
-from todolist.core.entities.project import Project
-from todolist.exceptions.invalid_entity import InvalidEntityError
-from todolist.exceptions.limit_exceeded import LimitExceededError
-from todolist.validators.project_validator import validate_project_name, validate_project_limits, MemoryStorageSingleton
-from todolist.storage.memory_storage import MemoryStorage
+from todolist.repositories.abstract import ProjectRepositoryInterface
+from todolist.models.project import Project
+from todolist.validators.project_validator import (
+    validate_project_name,
+    validate_project_uniqueness,
+    validate_project_limit,
+)
+from todolist.exceptions.not_found import NotFoundError
 
 
 class ProjectService:
-    def __init__(self, storage: Optional[MemoryStorage] = None) -> None:
-        self.storage = storage or MemoryStorageSingleton.get_instance()
+    def __init__(self, repo: ProjectRepositoryInterface):
+        self.repo = repo
 
     def create_project(self, name: str, description: str) -> Project:
         validate_project_name(name)
-        validate_project_limits()
-        proj = Project.create(name=name, description=description)
-        self.storage.add_project(proj)
-        return proj
+        validate_project_limit(self.repo)
+        validate_project_uniqueness(self.repo, name)
 
-    def edit_project(self, project_id: str, new_name: str, new_description: str) -> Project:
-        proj = self.storage.get_project(project_id)
-        if not proj:
-            raise InvalidEntityError("Project not found.")
-        validate_project_name(new_name, exclude_project_id=project_id)
-        proj.name = new_name
-        proj.description = new_description
-        return proj
-
-    def delete_project(self, project_id: str) -> bool:
-        return self.storage.remove_project(project_id)
+        proj = Project(name=name, description=description)
+        return self.repo.add(proj)
 
     def list_projects(self) -> List[Project]:
-        return self.storage.get_all_projects()
+        return self.repo.list()
 
-    def get_project(self, project_id: str) -> Optional[Project]:
-        return self.storage.get_project(project_id)
+    def get_project(self, project_id: int) -> Optional[Project]:
+        return self.repo.get(project_id)
+
+    def edit_project(self, project_id: int, name: str, description: str) -> Project:
+        proj = self.repo.get(project_id)
+        if not proj:
+            raise NotFoundError("Project not found.")
+
+        validate_project_name(name)
+        validate_project_uniqueness(self.repo, name, exclude_project_id=proj.id)
+
+        proj.name = name
+        proj.description = description
+        return self.repo.add(proj)
+
+    def delete_project(self, project_id: int) -> bool:
+        return self.repo.delete(project_id)

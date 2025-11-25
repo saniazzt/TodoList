@@ -9,8 +9,8 @@ def create_app_cli():
     db = SessionLocal()
     project_repo = SqlAlchemyProjectRepository(db)
     task_repo = SqlAlchemyTaskRepository(db)
-    project_service = ProjectService(project_repo, max_projects=None)
-    task_service = TaskService(task_repo, max_tasks=None)
+    project_service = ProjectService(project_repo)
+    task_service = TaskService(task_repo)
     return CLI(project_service, task_service), db
 
 def main():

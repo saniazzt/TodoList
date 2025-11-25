@@ -4,6 +4,9 @@ from alembic import context
 
 from todolist.db.base import Base
 
+from todolist.models.project import Project
+from todolist.models.task import Task
+
 # Alembic Config object
 config = context.config
 fileConfig(config.config_file_name)

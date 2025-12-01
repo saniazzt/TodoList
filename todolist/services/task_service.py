@@ -1,5 +1,5 @@
 from __future__ import annotations
-from datetime import datetime
+from datetime import date, datetime
 from typing import Optional, List
 from todolist.repositories.abstract import TaskRepositoryInterface
 from todolist.models.task import Task, TaskStatus
@@ -102,11 +102,16 @@ class TaskService:
         return self.repo.update(task)
 
     def autoclose_overdue(self) -> int:
-        overdue = self.repo.list_overdue()
-        count = 0
-        for task in overdue:
+        today = date.today()
+
+        overdue_tasks = self.repo.db.query(Task).filter(Task.deadline < today, Task.status != "done").all()
+
+        if not overdue_tasks:
+            return 0
+
+        for task in overdue_tasks:
             task.status = TaskStatus.done
             task.closed_at = datetime.utcnow()
             self.repo.update(task)
-            count += 1
-        return count
+
+        return len(overdue_tasks)

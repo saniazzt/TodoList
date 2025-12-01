@@ -1,3 +1,2 @@
-.env.example
 poetry.lock
 __pycache__/

@@ -1,0 +1,20 @@
+version: "3.8"
+services:
+  db:
+    image: postgres:15
+    container_name: todolist_db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-todolist}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-todolist}
+      POSTGRES_DB: ${POSTGRES_DB:-todolist}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 5s
+      retries: 5
+
+volumes:
+  db-data:

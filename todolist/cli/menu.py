@@ -1,12 +1,9 @@
 from __future__ import annotations
-
-from datetime import datetime
 from typing import Optional
-
-from todolist.core.services.project_service import ProjectService
-from todolist.core.services.task_service import TaskService
-from todolist.utils.formatter import success, error, info, format_entity
-
+from datetime import datetime
+from todolist.services.project_service import ProjectService
+from todolist.services.task_service import TaskService
+from todolist.utils.env_loader import get_env_int
 
 def parse_date(s: str) -> Optional[datetime.date]:
     if not s:
@@ -16,219 +13,199 @@ def parse_date(s: str) -> Optional[datetime.date]:
     except ValueError:
         raise ValueError("Date must be in YYYY-MM-DD format.")
 
-
 class CLI:
-    def __init__(self) -> None:
-        self.project_service = ProjectService()
-        self.task_service = TaskService()
+    def __init__(self, project_service: ProjectService, task_service: TaskService) -> None:
+        self.project_service = project_service
+        self.task_service = task_service
 
-    # ---------- Utility ----------
-    def pause_for_user(self) -> None:
-        """Wait for user input before returning to the main menu."""
-        input(info("\nPress Enter to return to the menu..."))
+    def pause(self) -> None:
+        input("\nPress Enter to continue...")
 
-    # ---------- Helper displays ----------
     def show_projects(self, pause: bool = True) -> bool:
-        """Show all projects. Returns False if no projects exist."""
         projects = self.project_service.list_projects()
         if not projects:
-            print(info("No projects found."))
-            if pause:
-                self.pause_for_user()
+            print("[INFO] No projects found.")
+            if pause: self.pause()
             return False
-
-        print("\nAvailable Projects:")
+        print("\nProjects:")
         print("-" * 100)
-        print(f"{'ID':<6} | {'Name':<20} | {'Tasks':<6} | {'Description'}")
+        print(f"{'ID':<6} | {'Name':<20} | {'Tasks':<6} | Description")
         print("-" * 100)
         for p in projects:
-            desc = p.description if len(p.description) <= 50 else p.description[:47] + "..."
+            desc = p.description or ""
+            desc = desc if len(desc) <= 50 else desc[:47] + "..."
             print(f"{p.id:<6} | {p.name:<20} | {len(p.tasks):<6} | {desc}")
         print("-" * 100)
-
-        if pause:
-            self.pause_for_user()
-
+        if pause: self.pause()
         return True
 
-    def show_tasks(self, project_id: str, pause: bool = True) -> bool:
-        """Show all tasks for a project. Returns False if no tasks exist."""
-        try:
-            tasks = self.task_service.list_tasks(project_id)
-        except Exception as exc:
-            print(error(str(exc)))
-            if pause:
-                self.pause_for_user()
+    def show_tasks(self, project_id: int, pause: bool = True) -> bool:
+        project = self.project_service.get_project(project_id)
+        if not project:
+            print("[ERROR] Project not found.")
+            if pause: self.pause()
             return False
-
+        tasks = self.task_service.list_tasks(project)
         if not tasks:
-            print(info("No tasks found for this project."))
-            if pause:
-                self.pause_for_user()
+            print("[INFO] No tasks for this project.")
+            if pause: self.pause()
             return False
-
-        print("\nTasks in Project:")
-        print("-" * 70)
-        print(f"{'ID':<5} | {'Title':<25} | {'Status':<6} | Deadline")
-        print("-" * 70)
+        print("\nTasks:")
+        print("-" * 80)
+        print(f"{'ID':<6} | {'Title':<25} | {'Status':<6} | Deadline")
+        print("-" * 80)
         for t in tasks:
             dl = t.deadline.isoformat() if t.deadline else "—"
-            print(f"{t.id:<5} | {t.title:<25} | {t.status:<6} | {dl}")
-        print("-" * 70)
-
-        if pause:
-            self.pause_for_user()
-
+            print(f"{t.id:<6} | {t.title:<25} | {t.status.value:<6} | {dl}")
+        print("-" * 80)
+        if pause: self.pause()
         return True
 
-    # ---------- Project operations ----------
     def create_project(self) -> None:
         name = input("Project name: ").strip()
         desc = input("Project description: ").strip()
         try:
-            proj = self.project_service.create_project(name, desc)
-            print(success(f"Project created: {format_entity(proj)}"))
-        except Exception as exc:
-            print(error(str(exc)))
-        self.pause_for_user()
-
-    def list_projects(self) -> None:
-        self.show_projects(pause=True)
+            p = self.project_service.create_project(name, desc)
+            print(f"[OK] Created project {p.id} | {p.name}")
+        except Exception as e:
+            print(f"[ERROR] {e}")
+        self.pause()
 
     def edit_project(self) -> None:
-        if not self.show_projects(pause=False):
-            return  # Stop if no projects
-        pid = input("Enter project id to edit: ").strip()
-        new_name = input("New project name: ").strip()
-        new_desc = input("New project description: ").strip()
+        if not self.show_projects(pause=False): return
+        pid_raw = input("Project id: ").strip()
         try:
-            proj = self.project_service.edit_project(pid, new_name, new_desc)
-            print(success(f"Project updated: {proj.id} | {proj.name}"))
-        except Exception as exc:
-            print(error(str(exc)))
-        self.pause_for_user()
+            pid = int(pid_raw)
+        except ValueError:
+            print("[ERROR] Invalid project id.")
+            self.pause(); return
+        new_name = input("New name: ").strip()
+        new_desc = input("New description: ").strip()
+        try:
+            p = self.project_service.edit_project(pid, new_name, new_desc)
+            print(f"[OK] Updated project {p.id} | {p.name}")
+        except Exception as e:
+            print(f"[ERROR] {e}")
+        self.pause()
 
     def delete_project(self) -> None:
-        if not self.show_projects(pause=False):
-            return  # Stop if no projects
-        pid = input("Enter project id to delete: ").strip()
+        if not self.show_projects(pause=False): return
+        pid_raw = input("Project id to delete: ").strip()
         try:
-            ok = self.project_service.delete_project(pid)
-            print(success("Project deleted") if ok else error("Project not found"))
-        except Exception as exc:
-            print(error(str(exc)))
-        self.pause_for_user()
+            pid = int(pid_raw)
+        except ValueError:
+            print("[ERROR] Invalid project id.")
+            self.pause(); return
+        ok = self.project_service.delete_project(pid)
+        print("[OK] Project deleted." if ok else "[ERROR] Project not found.")
+        self.pause()
 
-    # ---------- Task operations ----------
     def add_task(self) -> None:
-        if not self.show_projects(pause=False):
-            return  # Stop if no projects
-
-        pid = input("Enter project id to add task: ").strip()
+        if not self.show_projects(pause=False): return
+        pid_raw = input("Project id to add task: ").strip()
+        try:
+            pid = int(pid_raw)
+        except ValueError:
+            print("[ERROR] Invalid project id."); self.pause(); return
         project = self.project_service.get_project(pid)
         if not project:
-            print(error("Project not found."))
-            self.pause_for_user()
-            return
-
+            print("[ERROR] Project not found."); self.pause(); return
         title = input("Task title: ").strip()
         desc = input("Task description: ").strip()
-        dl = input("Deadline (YYYY-MM-DD) or blank: ").strip()
-
+        dl_raw = input("Deadline (YYYY-MM-DD) or blank: ").strip()
         try:
-            deadline = parse_date(dl) if dl else None
-            task = self.task_service.add_task(pid, title, desc, deadline)
-            print(success(f"Task added: {task.id} | {task.title}"))
-        except Exception as exc:
-            print(error(str(exc)))
-        self.pause_for_user()
+            dl = parse_date(dl_raw) if dl_raw else None
+            t = self.task_service.add_task(project, title, desc, dl)
+            print(f"[OK] Task added {t.id} | {t.title}")
+        except Exception as e:
+            print(f"[ERROR] {e}")
+        self.pause()
 
     def list_tasks(self) -> None:
-        if not self.show_projects(pause=False):
-            return  # Stop if no projects
-
-        pid = input("Enter project id to view tasks: ").strip()
+        if not self.show_projects(pause=False): return
+        pid_raw = input("Project id to view tasks: ").strip()
+        try:
+            pid = int(pid_raw)
+        except ValueError:
+            print("[ERROR] Invalid project id."); self.pause(); return
         self.show_tasks(pid, pause=True)
 
     def edit_task(self) -> None:
-        if not self.show_projects(pause=False):
-            return  # Stop if no projects
-
-        pid = input("Enter project id: ").strip()
+        if not self.show_projects(pause=False): return
+        pid_raw = input("Project id: ").strip()
+        try:
+            pid = int(pid_raw)
+        except ValueError:
+            print("[ERROR] Invalid project id."); self.pause(); return
         project = self.project_service.get_project(pid)
         if not project:
-            print(error("Project not found."))
-            self.pause_for_user()
-            return
-
-        if not self.show_tasks(pid, pause=False):
-            return  # Stop if no tasks
-
-        tid = input("Enter task id to edit: ").strip()
-
-        print("\nLeave any field blank to keep current value.")
+            print("[ERROR] Project not found."); self.pause(); return
+        if not self.show_tasks(pid, pause=False): return
+        tid_raw = input("Task id: ").strip()
+        try:
+            tid = int(tid_raw)
+        except ValueError:
+            print("[ERROR] Invalid task id."); self.pause(); return
+        print("Leave blank to keep current value.")
         title = input("New title: ").strip() or None
         desc = input("New description: ").strip() or None
         status = input("New status (todo/doing/done): ").strip() or None
-        dl = input("New deadline (YYYY-MM-DD) or blank: ").strip() or None
-
+        dl_raw = input("New deadline (YYYY-MM-DD) or blank: ").strip() or None
         try:
-            deadline = parse_date(dl) if dl else None
-            task = self.task_service.edit_task(pid, tid, title, desc, status, deadline)
-            print(success(f"Task updated: {task.id} | {task.title} | {task.status}"))
-        except Exception as exc:
-            print(error(str(exc)))
-        self.pause_for_user()
+            dl = parse_date(dl_raw) if dl_raw else None
+            t = self.task_service.edit_task(project, tid, title, desc, status, dl)
+            print(f"[OK] Task updated {t.id} | {t.title} | {t.status.value}")
+        except Exception as e:
+            print(f"[ERROR] {e}")
+        self.pause()
 
     def delete_task(self) -> None:
-        if not self.show_projects(pause=False):
-            return  # Stop if no projects
-
-        pid = input("Enter project id: ").strip()
+        if not self.show_projects(pause=False): return
+        pid_raw = input("Project id: ").strip()
+        try:
+            pid = int(pid_raw)
+        except ValueError:
+            print("[ERROR] Invalid project id."); self.pause(); return
         project = self.project_service.get_project(pid)
         if not project:
-            print(error("Project not found."))
-            self.pause_for_user()
-            return
-
-        if not self.show_tasks(pid, pause=False):
-            return  # Stop if no tasks
-
-        tid = input("Enter task id to delete: ").strip()
+            print("[ERROR] Project not found."); self.pause(); return
+        if not self.show_tasks(pid, pause=False): return
+        tid_raw = input("Task id to delete: ").strip()
         try:
-            ok = self.task_service.delete_task(pid, tid)
-            print(success("Task deleted") if ok else error("Task not found"))
-        except Exception as exc:
-            print(error(str(exc)))
-        self.pause_for_user()
+            tid = int(tid_raw)
+        except ValueError:
+            print("[ERROR] Invalid task id."); self.pause(); return
+        ok = self.task_service.delete_task(project, tid)
+        print("[OK] Task deleted." if ok else "[ERROR] Task not found.")
+        self.pause()
 
     def change_task_status(self) -> None:
-        if not self.show_projects(pause=False):
-            return  # Stop if no projects
-
-        pid = input("Enter project id: ").strip()
+        if not self.show_projects(pause=False): return
+        pid_raw = input("Project id: ").strip()
+        try:
+            pid = int(pid_raw)
+        except ValueError:
+            print("[ERROR] Invalid project id."); self.pause(); return
         project = self.project_service.get_project(pid)
         if not project:
-            print(error("Project not found."))
-            self.pause_for_user()
-            return
-
-        if not self.show_tasks(pid, pause=False):
-            return  # Stop if no tasks
-
-        tid = input("Enter task id to change status: ").strip()
+            print("[ERROR] Project not found."); self.pause(); return
+        if not self.show_tasks(pid, pause=False): return
+        tid_raw = input("Task id: ").strip()
+        try:
+            tid = int(tid_raw)
+        except ValueError:
+            print("[ERROR] Invalid task id."); self.pause(); return
         status = input("New status (todo/doing/done): ").strip()
         try:
-            t = self.task_service.change_status(pid, tid, status)
-            print(success(f"Status updated: {t.id} is now {t.status}"))
-        except Exception as exc:
-            print(error(str(exc)))
-        self.pause_for_user()
+            t = self.task_service.change_status(project, tid, status)
+            print(f"[OK] Status updated: {t.id} -> {t.status.value}")
+        except Exception as e:
+            print(f"[ERROR] {e}")
+        self.pause()
 
-    # ---------- Menu ----------
     def run(self) -> None:
         actions = {
-            "1": ("List projects", self.list_projects),
+            "1": ("List projects", self.show_projects),
             "2": ("Create project", self.create_project),
             "3": ("Edit project", self.edit_project),
             "4": ("Delete project", self.delete_project),
@@ -239,22 +216,18 @@ class CLI:
             "9": ("Change task status", self.change_task_status),
             "q": ("Quit", None),
         }
-
         while True:
             print("\n=== ToDoList Menu ===")
-            for k, (label, _) in actions.items():
-                print(f"{k}) {label}")
+            for k, v in actions.items():
+                print(f"{k}) {v[0]}")
             choice = input("Choose: ").strip().lower()
             if choice == "q":
-                print(info("Goodbye"))
+                print("Goodbye")
                 break
             action = actions.get(choice)
             if not action:
-                print(error("Invalid choice"))
+                print("[ERROR] Invalid choice.")
                 continue
             _, func = action
             if func:
-                try:
-                    func()
-                except Exception as exc:
-                    print(error(f"Unhandled error: {exc}"))
+                func()

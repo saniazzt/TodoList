@@ -216,6 +216,17 @@ class CLI:
             "9": ("Change task status", self.change_task_status),
             "q": ("Quit", None),
         }
+        CLI_DEPRECATION_WARNING = """
+╔══════════════════════════════════════════════════════════════════════╗
+║                         DEPRECATION NOTICE                           ║
+╚══════════════════════════════════════════════════════════════════════╝        
+ The CLI interface is deprecated and will be removed in the next
+ release.
+ Please migrate to using the REST API endpoints.
+ All functionality is available via the FastAPI web service.
+ See README.md for API documentation and migration guide.
+        """
+        print(CLI_DEPRECATION_WARNING)
         while True:
             print("\n=== ToDoList Menu ===\n")
             for k, v in actions.items():

@@ -217,7 +217,7 @@ class CLI:
             "q": ("Quit", None),
         }
         while True:
-            print("\n=== ToDoList Menu ===")
+            print("\n=== ToDoList Menu ===\n")
             for k, v in actions.items():
                 print(f"{k}) {v[0]}")
             choice = input("Choose: ").strip().lower()

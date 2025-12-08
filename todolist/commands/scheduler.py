@@ -9,12 +9,12 @@ def run_autoclose():
     autoclose()
 
 def start_scheduler():
-    schedule.every().day.at("00:00").do(run_autoclose)
-    print("Scheduler started (Runs autoclose daily at 00:00)")
+    schedule.every(5).minutes.do(run_autoclose)
+    print("Scheduler started (Runs autoclose every 5 minutes)")
 
     while True:
         schedule.run_pending()
-        time.sleep(60)
+        time.sleep(2)
 
 if __name__ == "__main__":
     start_scheduler()

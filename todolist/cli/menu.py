@@ -51,13 +51,14 @@ class CLI:
             if pause: self.pause()
             return False
         print("\nTasks:")
-        print("-" * 80)
-        print(f"{'ID':<6} | {'Title':<25} | {'Status':<6} | Deadline")
-        print("-" * 80)
+        print("-" * 120)
+        print(f"{'ID':<6} | {'Title':<25} | {'Status':<6} | {'Deadline':<12} | Closed At")
+        print("-" * 120)
         for t in tasks:
             dl = t.deadline.isoformat() if t.deadline else "—"
-            print(f"{t.id:<6} | {t.title:<25} | {t.status.value:<6} | {dl}")
-        print("-" * 80)
+            closed = t.closed_at.isoformat() if t.closed_at else "—"
+            print(f"{t.id:<6} | {t.title:<25} | {t.status.value:<6} | {dl:<12} | {closed}")
+        print("-" * 120)
         if pause: self.pause()
         return True
 
@@ -216,8 +217,19 @@ class CLI:
             "9": ("Change task status", self.change_task_status),
             "q": ("Quit", None),
         }
+        CLI_DEPRECATION_WARNING = """
+╔══════════════════════════════════════════════════════════════════════╗
+║                         DEPRECATION NOTICE                           ║
+╚══════════════════════════════════════════════════════════════════════╝        
+ The CLI interface is deprecated and will be removed in the next
+ release.
+ Please migrate to using the FastAPI endpoints.
+ All functionality is available via the FastAPI web service.
+ See README.md for API documentation and migration guide.
+        """
+        print(CLI_DEPRECATION_WARNING)
         while True:
-            print("\n=== ToDoList Menu ===")
+            print("\n=== ToDoList Menu ===\n")
             for k, v in actions.items():
                 print(f"{k}) {v[0]}")
             choice = input("Choose: ").strip().lower()

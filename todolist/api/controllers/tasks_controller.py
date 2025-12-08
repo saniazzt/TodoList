@@ -21,6 +21,13 @@ def get_task_service():
 
 @router.get("/project/{project_id}", response_model=List[TaskResponse])
 def list_tasks(project_id: int, deps = Depends(get_task_service)):
+    """
+    Retrieve all tasks for a specific project.
+
+    - **project_id**: Project ID (path parameter)
+
+    Returns a list of all tasks in the project, including their status, deadline, and closed timestamp.
+    """
     svc, p_repo = deps
     project = p_repo.get(project_id)
     if not project:
@@ -41,6 +48,16 @@ def list_tasks(project_id: int, deps = Depends(get_task_service)):
 
 @router.post("/project/{project_id}", response_model=TaskResponse, status_code=status.HTTP_201_CREATED)
 def add_task(project_id: int, payload: TaskCreateRequest, deps = Depends(get_task_service)):
+    """
+    Create a new task within a project.
+
+    - **project_id**: Project ID (path parameter)
+    - **title**: Task title (required, max 30 characters)
+    - **description**: Optional task description (max 150 characters)
+    - **deadline**: Optional deadline in YYYY-MM-DD format
+
+    Returns the created task with initial status 'todo'.
+    """
     svc, p_repo = deps
     project = p_repo.get(project_id)
     if not project:
@@ -61,6 +78,18 @@ def add_task(project_id: int, payload: TaskCreateRequest, deps = Depends(get_tas
 
 @router.patch("/{task_id}", response_model=TaskResponse)
 def edit_task(task_id: int, payload: TaskEditRequest, deps = Depends(get_task_service)):
+    """
+    Edit an existing task.
+
+    - **task_id**: Task ID (path parameter)
+    - **title**: Updated task title (optional, max 30 characters)
+    - **description**: Updated task description (optional, max 150 characters)
+    - **status**: Updated status - 'todo', 'doing', or 'done' (optional)
+    - **deadline**: Updated deadline in YYYY-MM-DD format (optional)
+
+    When status is changed to 'done', the closed_at timestamp is automatically set.
+    All fields are optional - only provide fields you want to update.
+    """
     svc, p_repo = deps
     # load task first
     t = svc.repo.get(task_id)
@@ -83,6 +112,13 @@ def edit_task(task_id: int, payload: TaskEditRequest, deps = Depends(get_task_se
 
 @router.delete("/{task_id}")
 def delete_task(task_id: int, deps = Depends(get_task_service)):
+    """
+    Delete a task by ID.
+
+    - **task_id**: Task ID to delete (path parameter)
+
+    Returns a success status when the task is deleted.
+    """
     svc, p_repo = deps
     t = svc.repo.get(task_id)
     if not t:
@@ -94,6 +130,14 @@ def delete_task(task_id: int, deps = Depends(get_task_service)):
 
 @router.patch("/{tid}/status")
 def change_task_status(tid: int, payload: TaskStatusRequest, deps=Depends(get_task_service)):
+    """
+    Change the status of a task.
+
+    - **tid**: Task ID (path parameter)
+    - **status**: New status - 'todo', 'doing', or 'done' (required)
+
+    When status is changed to 'done', the closed_at timestamp is automatically set to the current time.
+    """
     svc, p_repo = deps
     t = svc.repo.get(tid)
     if not t:

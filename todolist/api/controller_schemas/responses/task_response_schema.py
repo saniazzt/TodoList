@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import Optional
-from datetime import date
+from datetime import date, datetime
+
 
 class TaskResponse(BaseModel):
     id: int
@@ -9,3 +10,4 @@ class TaskResponse(BaseModel):
     description: Optional[str]
     status: str
     deadline: Optional[date]
+    closed_at: Optional[datetime]

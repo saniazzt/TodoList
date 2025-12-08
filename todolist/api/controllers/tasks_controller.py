@@ -26,7 +26,18 @@ def list_tasks(project_id: int, deps = Depends(get_task_service)):
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     tasks = svc.list_tasks(project)
-    return [TaskResponse(id=t.id, project_id=t.project_id, title=t.title, description=t.description, status=t.status.value if hasattr(t.status, "value") else str(t.status), deadline=t.deadline) for t in tasks]
+    return [
+        TaskResponse(
+            id=t.id,
+            project_id=t.project_id,
+            title=t.title,
+            description=t.description,
+            status=t.status.value if hasattr(t.status, "value") else str(t.status),
+            deadline=t.deadline,
+            closed_at=t.closed_at,
+        )
+        for t in tasks
+    ]
 
 @router.post("/project/{project_id}", response_model=TaskResponse, status_code=status.HTTP_201_CREATED)
 def add_task(project_id: int, payload: TaskCreateRequest, deps = Depends(get_task_service)):
@@ -36,7 +47,15 @@ def add_task(project_id: int, payload: TaskCreateRequest, deps = Depends(get_tas
         raise HTTPException(status_code=404, detail="Project not found")
     try:
         t = svc.add_task(project, payload.title, payload.description or "", payload.deadline)
-        return TaskResponse(id=t.id, project_id=t.project_id, title=t.title, description=t.description, status=t.status.value if hasattr(t.status,"value") else str(t.status), deadline=t.deadline)
+        return TaskResponse(
+            id=t.id,
+            project_id=t.project_id,
+            title=t.title,
+            description=t.description,
+            status=t.status.value if hasattr(t.status, "value") else str(t.status),
+            deadline=t.deadline,
+            closed_at=t.closed_at,
+        )
     except Exception as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 
@@ -50,7 +69,15 @@ def edit_task(task_id: int, payload: TaskEditRequest, deps = Depends(get_task_se
     project = p_repo.get(t.project_id)
     try:
         updated = svc.edit_task(project, task_id, payload.title, payload.description, payload.status, payload.deadline)
-        return TaskResponse(id=updated.id, project_id=updated.project_id, title=updated.title, description=updated.description, status=updated.status.value if hasattr(updated.status,"value") else str(updated.status), deadline=updated.deadline)
+        return TaskResponse(
+            id=updated.id,
+            project_id=updated.project_id,
+            title=updated.title,
+            description=updated.description,
+            status=updated.status.value if hasattr(updated.status, "value") else str(updated.status),
+            deadline=updated.deadline,
+            closed_at=updated.closed_at,
+        )
     except Exception as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 
@@ -73,6 +100,15 @@ def change_task_status(tid: int, payload: TaskStatusRequest, deps=Depends(get_ta
         raise HTTPException(status_code=404, detail="Task not found.")
     p = p_repo.get(t.project_id)
     try:
-        return svc.change_status(p, tid, payload.status)
+        updated = svc.change_status(p, tid, payload.status)
+        return TaskResponse(
+            id=updated.id,
+            project_id=updated.project_id,
+            title=updated.title,
+            description=updated.description,
+            status=updated.status.value if hasattr(updated.status, "value") else str(updated.status),
+            deadline=updated.deadline,
+            closed_at=updated.closed_at,
+        )
     except ValueError as err:
         raise HTTPException(status_code=400, detail=str(err))
